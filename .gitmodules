@@ -1,0 +1,12 @@
+[submodule "Kha"]
+	path = Kha
+	url = https://github.com/KTXSoftware/Kha
+[submodule "Libraries/spriter"]
+	path = Libraries/spriter
+	url = https://github.com/wighawag/spriter
+[submodule "Libraries/spriterkha"]
+	path = Libraries/spriterkha
+	url = https://github.com/wighawag/spriterkha
+[submodule "Libraries/imagesheet"]
+	path = Libraries/imagesheet
+	url = https://github.com/wighawag/imagesheet
