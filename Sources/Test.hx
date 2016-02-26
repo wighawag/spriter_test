@@ -4,52 +4,48 @@ import kha.Framebuffer;
 import kha.Assets;
 import kha.Scheduler;
 import kha.System;
-import kha.math.FastMatrix4;
-import kha.math.FastMatrix3;
-import kha.math.FastVector4;
-import kha.math.FastVector3;
-import kha.math.FastVector2;
+
 import kha.input.Keyboard;
 
 import spriter.Spriter;
 import spriter.EntityInstance;
 
 import kha.Key;
-import kha.Font;
-using spriterkha.SpriterG2;
 
 import imagesheet.ImageSheet;
+
 
 @:access(spriter)
 class Test {
 	var lastTime : Float;
-	var lastRenderTime : Float;
+	
 	
 	var entities : Array<EntityInstance>;
-	var currentEntity : EntityInstance;
-	var imageSheet : ImageSheet;
+	public var currentEntity : EntityInstance;
 	
-	var updateFps : Float = 0;
-	var drawFps : Float = 0;
+	var presenter : Presenter;
+	var presenterIndex : Int = 0;
+	var presenters : Array<Presenter>;
 	
-	var loadedFont : Font;
+	
+	public var updateFps : Float = 0;	
+
 	
 	#if HXCPP_TELEMETRY 
 	var hxt : hxtelemetry.HxTelemetry;
 	#end
 	
 	public function new() {
+		presenters = new Array();
 		entities = new Array();
 		currentEntity = null;
 		Assets.loadEverything(loadingFinished);
 	}
 
 	function loadingFinished() {
-		loadedFont = Assets.fonts.arial;
 		lastTime = 0;
-		lastRenderTime = 0;
 		
-		imageSheet = ImageSheet.fromTexturePackerJsonArray(Assets.blobs.player_sheet_json.toString());
+		var imageSheet = ImageSheet.fromTexturePackerJsonArray(Assets.blobs.player_sheet_json.toString());
 		var spriter = Spriter.parseScml(Assets.blobs.player_scml.toString());
 		entities.push(spriter.createEntity("Player"));
 		
@@ -80,6 +76,10 @@ class Test {
 		
 		var keyboard = Keyboard.get();
 		keyboard.notify(keyDown, keyUp);
+		
+		presenters.push(new G2Presenter(this,imageSheet));
+		presenters.push(new G4Presenter(this, imageSheet));
+		presenter = presenters[presenterIndex];
 	}
 	
 	function keyDown(key : Key, c : String){
@@ -94,6 +94,7 @@ class Test {
 					case "x" : currentEntity.play(currentEntity.currentAnimationName); 
 					case "t" : currentEntity.transition(getNextAnimation(), 1);
 					case "c" : nextCharacterMap();
+					case "g" : nextPresenter();
 				} 			
 			default:
 		}
@@ -101,6 +102,12 @@ class Test {
 	
 	function keyUp(key : Key, c : String){
 		
+	}
+	
+	private function nextPresenter(){
+		presenterIndex ++;
+		presenterIndex = presenterIndex % presenters.length;
+		presenter = presenters[presenterIndex];
 	}
 	
 	private function getNextAnimation() : String
@@ -151,56 +158,11 @@ class Test {
 	}
 	
 	public function render(framebuffer: Framebuffer): Void {
-		var now = Scheduler.time();
-		var delta = now - lastRenderTime;
-		lastRenderTime = now;
-		
-		drawFps = Std.int(1.0 / delta);
-		
-		var g2 = framebuffer.g2;
-		g2.begin();
-		g2.clear();
-		g2.transformation = FastMatrix3.identity();
-		g2.drawRect(0, 0, 10, 10);
-		
-		//g2.drawDebugSpriter(currentEntity,framebuffer.width/2,framebuffer.height);
-		g2.drawSpriter(imageSheet, currentEntity,framebuffer.width/2,framebuffer.height);
-		
-		g2.transformation = FastMatrix3.identity();
-		g2.font = loadedFont;
-		g2.fontSize = 12;
-		g2.color = kha.Color.White;
-		//var w = loadedFont.width(12, text);
-		var h = loadedFont.height(12);
-		
-		
-		g2.drawString("FPS (Update) = " + updateFps, framebuffer.width - 200, 10);
-		g2.drawString("FPS (Draw) =   " + drawFps, framebuffer.width - 200, 10 + h);
-		//g2.drawString(instructions, 10, 10);
-		g2.drawString("" + currentEntity.entity.name + " : " + currentEntity.currentAnimationName, 10, framebuffer.height - 50);
-		//g2.drawString(metadata, framebuffer.width - 300, framebuffer.height * 0.5);
-		drawMetadata(g2,framebuffer.width - 300, framebuffer.height * 0.5, h);
-		g2.end();
+		presenter.render(framebuffer);
 	}
 	
-	function drawMetadata(g2 : kha.graphics2.Graphics, x : Float, y : Float, sep : Float){
-		 g2.drawString("Variables:",x, y);
-		 var height = sep;
-		 var values = getVarValues();
-		 for(line in values){
-			g2.drawString(line,x, y + height);
-			height += sep;	 
-		 }
-		 g2.drawString("Tags:",x, y + height);
-		 height += sep;	 
-		 var values = getTagValues();
-		 for(line in values){
-			g2.drawString(line,x, y + height);
-			height += sep;	 
-		 }
-	}
 	
-	function getVarValues() : Array<String>
+	public function getVarValues() : Array<String>
 	{
 		
 		var strings : Array<String> = [];
@@ -265,7 +227,7 @@ class Test {
 	}
 
 
-	function getTagValues() : Array<String>
+	public function getTagValues() : Array<String>
 	{
 		var strings = new Array<String>();
 		for(i in 0...currentEntity.animationTags.numElements){
