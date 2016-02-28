@@ -22,6 +22,7 @@ import kha.graphics4.CompareMode;
 import kha.math.FastMatrix4;
 import kha.math.FastVector3;
 import kha.graphics4.TextureUnit;
+import kha.graphics4.BlendingOperation;
 
 @:access(spriter)
 class G4Presenter implements Presenter{
@@ -56,6 +57,9 @@ class G4Presenter implements Presenter{
 		pipeline.fragmentShader = Shaders.simple_frag;
 		pipeline.vertexShader = Shaders.simple_vert;
 
+		pipeline.blendSource = SourceAlpha;
+		pipeline.blendDestination = InverseSourceAlpha; 
+		
 		// pipeline.depthWrite = true;
 		// pipeline.depthMode = CompareMode.Less;
 		pipeline.compile();
@@ -118,7 +122,7 @@ class G4Presenter implements Presenter{
 		
 		var g = framebuffer.g4;
 		g.begin();
-		g.clear(Color.fromFloats(0.3, 0.3, 0.3), 1.0);
+		g.clear(Color.fromFloats(0.0, 0.0, 0.0), 1.0);
 
 		g.setPipeline(pipeline);
 		
